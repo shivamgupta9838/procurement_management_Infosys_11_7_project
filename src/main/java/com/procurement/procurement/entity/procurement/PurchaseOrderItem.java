@@ -17,6 +17,7 @@ public class PurchaseOrderItem {
 
     @ManyToOne
     @JoinColumn(name = "purchase_order_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private PurchaseOrder purchaseOrder;
 
     public PurchaseOrderItem() {

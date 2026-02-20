@@ -11,19 +11,21 @@ public class VendorDocument {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String documentName;  // e.g., "PAN Card", "GST Certificate"
-    private String documentType;  // e.g., "PDF", "IMAGE"
-    private String documentUrl;   // path ya link jahan document store hai
-    private boolean verified;     // document verified or not
+    private String documentName; // e.g., "PAN Card", "GST Certificate"
+    private String documentType; // e.g., "PDF", "IMAGE"
+    private String documentUrl; // path ya link jahan document store hai
+    private boolean verified; // document verified or not
 
     @ManyToOne
     @JoinColumn(name = "vendor_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Vendor vendor;
 
     public VendorDocument() {
     }
 
-    public VendorDocument(String documentName, String documentType, String documentUrl, boolean verified, Vendor vendor) {
+    public VendorDocument(String documentName, String documentType, String documentUrl, boolean verified,
+            Vendor vendor) {
         this.documentName = documentName;
         this.documentType = documentType;
         this.documentUrl = documentUrl;

@@ -15,10 +15,12 @@ public class Approval {
     // Approval linked to either Requisition or PurchaseOrder
     @ManyToOne
     @JoinColumn(name = "requisition_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Requisition requisition;
 
     @ManyToOne
     @JoinColumn(name = "purchase_order_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private PurchaseOrder purchaseOrder;
 
     @ManyToOne
@@ -33,7 +35,9 @@ public class Approval {
     public Approval() {
     }
 
-    public Approval(Requisition requisition, PurchaseOrder purchaseOrder, com.procurement.procurement.entity.user.User approver, String status, String comments, LocalDateTime approvedAt) {
+    public Approval(Requisition requisition, PurchaseOrder purchaseOrder,
+            com.procurement.procurement.entity.user.User approver, String status, String comments,
+            LocalDateTime approvedAt) {
         this.requisition = requisition;
         this.purchaseOrder = purchaseOrder;
         this.approver = approver;

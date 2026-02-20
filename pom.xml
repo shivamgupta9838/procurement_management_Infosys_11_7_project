@@ -85,21 +85,95 @@
 			<version>2.2.0</version>
 		</dependency>
 
-		<!-- JasperReports Core -->
+		<!-- JasperReports Consolidated -->
 		<dependency>
 			<groupId>net.sf.jasperreports</groupId>
 			<artifactId>jasperreports</artifactId>
 			<version>7.0.0</version>
 		</dependency>
-
-		<!-- JasperReports Fonts (optional) -->
+		<dependency>
+			<groupId>net.sf.jasperreports</groupId>
+			<artifactId>jasperreports-pdf</artifactId>
+			<version>7.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>2.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.jasperreports</groupId>
+			<artifactId>jasperreports-excel-poi</artifactId>
+			<version>7.0.0</version>
+		</dependency>
 		<dependency>
 			<groupId>net.sf.jasperreports</groupId>
 			<artifactId>jasperreports-fonts</artifactId>
 			<version>7.0.0</version>
 		</dependency>
+		<dependency>
+			<groupId>net.sf.jasperreports</groupId>
+			<artifactId>jasperreports-functions</artifactId>
+			<version>7.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.jasperreports</groupId>
+			<artifactId>jasperreports-jdt</artifactId>
+			<version>7.0.0</version>
+		</dependency>
 
-		<!-- Apache POI for Excel Export (JRXlsxExporter) -->
+		<!-- Jackson Overrides for Jasper 7 -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.17.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>2.17.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>2.17.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+			<version>2.17.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
+			<version>2.17.1</version>
+		</dependency>
+
+		<!-- Woodstox for Jackson XML -->
+		<dependency>
+			<groupId>com.fasterxml.woodstox</groupId>
+			<artifactId>woodstox-core</artifactId>
+			<version>6.6.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.woodstox</groupId>
+			<artifactId>stax2-api</artifactId>
+			<version>4.2.2</version>
+		</dependency>
+
+		<!-- Jakarta XML Binding API & Runtime -->
+		<dependency>
+			<groupId>jakarta.xml.bind</groupId>
+			<artifactId>jakarta.xml.bind-api</artifactId>
+			<version>4.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+			<version>4.0.5</version>
+		</dependency>
+
+		<!-- Apache POI for Excel Export -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
@@ -128,22 +202,7 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
-		<dependency>
-			<groupId>net.sf.jasperreports</groupId>
-			<artifactId>jasperreports</artifactId>
-			<version>7.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml</artifactId>
-			<version>5.2.3</version>
-		</dependency>
 
-		<!-- Thymeleaf Template Engine -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
 		<!-- Thymeleaf Template Engine -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -165,6 +224,7 @@
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>

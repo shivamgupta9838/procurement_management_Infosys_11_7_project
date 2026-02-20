@@ -16,6 +16,7 @@ public class VendorRating {
 
     @ManyToOne
     @JoinColumn(name = "vendor_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Vendor vendor;
 
     public VendorRating() {

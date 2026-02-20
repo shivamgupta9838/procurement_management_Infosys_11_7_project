@@ -5,12 +5,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(
-        name = "roles",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "name")
-        }
-)
+@Table(name = "roles", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "name")
+})
 public class Role {
 
     @Id
@@ -35,11 +32,7 @@ public class Role {
      * Role -> Permission Mapping
      */
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "role_permissions",
-            joinColumns = @JoinColumn(name = "role_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
+    @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private Set<Permission> permissions = new HashSet<>();
 
     /**
@@ -47,6 +40,7 @@ public class Role {
      * (Recommended for enterprise projects)
      */
     @ManyToMany(mappedBy = "roles")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Set<User> users = new HashSet<>();
 
     // ===================== Constructors =====================

@@ -1,9 +1,7 @@
 package com.procurement.procurement.controller.procurement;
 
 import com.procurement.procurement.entity.procurement.PurchaseOrder;
-import com.procurement.procurement.entity.procurement.PurchaseOrderItem;
-import com.procurement.procurement.repository.procurement.PurchaseOrderRepository;
-import com.procurement.procurement.repository.procurement.PurchaseOrderItemRepository;
+import com.procurement.procurement.service.procurement.PurchaseOrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,43 +12,30 @@ import java.util.Optional;
 @RequestMapping("/procurement/purchase-order")
 public class PurchaseOrderController {
 
-    private final PurchaseOrderRepository purchaseOrderRepository;
-    private final PurchaseOrderItemRepository purchaseOrderItemRepository;
+    private final PurchaseOrderService purchaseOrderService;
 
-    public PurchaseOrderController(PurchaseOrderRepository purchaseOrderRepository,
-                                   PurchaseOrderItemRepository purchaseOrderItemRepository) {
-        this.purchaseOrderRepository = purchaseOrderRepository;
-        this.purchaseOrderItemRepository = purchaseOrderItemRepository;
+    public PurchaseOrderController(PurchaseOrderService purchaseOrderService) {
+        this.purchaseOrderService = purchaseOrderService;
     }
 
     // ===================== Create Purchase Order =====================
     @PostMapping("/create")
     public ResponseEntity<PurchaseOrder> createPurchaseOrder(@RequestBody PurchaseOrder purchaseOrder) {
-        // Save purchase order first
-        PurchaseOrder po = purchaseOrderRepository.save(purchaseOrder);
-
-        // Save items if present
-        if (po.getItems() != null) {
-            for (PurchaseOrderItem item : po.getItems()) {
-                item.setPurchaseOrder(po);
-                purchaseOrderItemRepository.save(item);
-            }
-        }
-
+        PurchaseOrder po = purchaseOrderService.createPurchaseOrder(purchaseOrder);
         return ResponseEntity.ok(po);
     }
 
     // ===================== Get all Purchase Orders =====================
     @GetMapping("/all")
     public ResponseEntity<List<PurchaseOrder>> getAllPurchaseOrders() {
-        List<PurchaseOrder> orders = purchaseOrderRepository.findAll();
+        List<PurchaseOrder> orders = purchaseOrderService.getAllPurchaseOrders();
         return ResponseEntity.ok(orders);
     }
 
     // ===================== Get Purchase Order by ID =====================
     @GetMapping("/{id}")
     public ResponseEntity<?> getPurchaseOrderById(@PathVariable Long id) {
-        Optional<PurchaseOrder> poOpt = purchaseOrderRepository.findById(id);
+        Optional<PurchaseOrder> poOpt = purchaseOrderService.getPurchaseOrderById(id);
         if (poOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("Purchase Order not found");
         }
@@ -60,16 +45,12 @@ public class PurchaseOrderController {
     // ===================== Update Purchase Order Status =====================
     @PatchMapping("/update-status/{id}")
     public ResponseEntity<String> updateStatus(@PathVariable Long id,
-                                               @RequestParam String status) {
-        Optional<PurchaseOrder> poOpt = purchaseOrderRepository.findById(id);
-        if (poOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("Purchase Order not found");
+            @RequestParam String status) {
+        try {
+            purchaseOrderService.updatePurchaseOrderStatus(id, status);
+            return ResponseEntity.ok("Purchase Order status updated to " + status);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        PurchaseOrder po = poOpt.get();
-        po.setStatus(status);
-        purchaseOrderRepository.save(po);
-
-        return ResponseEntity.ok("Purchase Order status updated to " + status);
     }
 }

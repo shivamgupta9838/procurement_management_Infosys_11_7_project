@@ -34,7 +34,8 @@ public class PurchaseOrder {
     public PurchaseOrder() {
     }
 
-    public PurchaseOrder(String poNumber, Vendor vendor, String status, LocalDateTime createdAt, LocalDateTime updatedAt, List<PurchaseOrderItem> items, List<Approval> approvals) {
+    public PurchaseOrder(String poNumber, Vendor vendor, String status, LocalDateTime createdAt,
+            LocalDateTime updatedAt, List<PurchaseOrderItem> items, List<Approval> approvals) {
         this.poNumber = poNumber;
         this.vendor = vendor;
         this.status = status;
@@ -108,4 +109,5 @@ public class PurchaseOrder {
     public void setApprovals(List<Approval> approvals) {
         this.approvals = approvals;
     }
+
 }

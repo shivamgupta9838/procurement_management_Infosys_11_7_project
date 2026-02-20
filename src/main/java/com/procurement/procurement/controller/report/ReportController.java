@@ -18,16 +18,17 @@ public class ReportController {
         this.reportService = reportService;
     }
 
-    // ===================== Generate Vendor Report (PDF/Excel) =====================
-    @PostMapping("/vendor")
-    public ResponseEntity<byte[]> generateVendorReport(@RequestBody ReportRequestDTO request,
-                                                       @RequestParam(defaultValue = "pdf") String format) {
+    // ===================== Generate Vendor Report (PDF/Excel)
+    // =====================
+    @RequestMapping(value = "/vendor", method = { RequestMethod.GET, RequestMethod.POST })
+    public ResponseEntity<byte[]> generateVendorReport(@RequestBody(required = false) ReportRequestDTO request,
+            @RequestParam(defaultValue = "pdf") String format) {
 
         byte[] data = reportService.generateVendorReport(request, format);
 
-        String mimeType = format.equalsIgnoreCase("excel") ?
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" :
-                "application/pdf";
+        String mimeType = format.equalsIgnoreCase("excel")
+                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                : "application/pdf";
 
         String fileName = "vendor_report." + (format.equalsIgnoreCase("excel") ? "xlsx" : "pdf");
 

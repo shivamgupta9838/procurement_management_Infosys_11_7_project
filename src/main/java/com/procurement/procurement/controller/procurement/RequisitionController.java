@@ -14,15 +14,30 @@ import java.util.Optional;
 public class RequisitionController {
 
     private final RequisitionRepository requisitionRepository;
+    private final com.procurement.procurement.repository.user.UserRepository userRepository;
 
-    public RequisitionController(RequisitionRepository requisitionRepository) {
+    public RequisitionController(RequisitionRepository requisitionRepository,
+            com.procurement.procurement.repository.user.UserRepository userRepository) {
         this.requisitionRepository = requisitionRepository;
+        this.userRepository = userRepository;
     }
 
     // ===================== Create Requisition =====================
     @PostMapping("/create")
     public ResponseEntity<Requisition> createRequisition(@RequestBody Requisition requisition) {
+        // Fetch full User to avoid null fields in response
+        if (requisition.getRequestedBy() != null && requisition.getRequestedBy().getId() != null) {
+            userRepository.findById(requisition.getRequestedBy().getId())
+                    .ifPresent(requisition::setRequestedBy);
+        }
+
         requisition.setStatus("PENDING"); // Default status
+
+        // Link items to the parent requisition
+        if (requisition.getItems() != null) {
+            requisition.getItems().forEach(item -> item.setRequisition(requisition));
+        }
+
         Requisition savedReq = requisitionRepository.save(requisition);
         return ResponseEntity.ok(savedReq);
     }
@@ -38,7 +53,7 @@ public class RequisitionController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getRequisitionById(@PathVariable Long id) {
         Optional<Requisition> reqOpt = requisitionRepository.findById(id);
-        if(reqOpt.isEmpty()) {
+        if (reqOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("Requisition not found");
         }
         return ResponseEntity.ok(reqOpt.get());
@@ -47,9 +62,9 @@ public class RequisitionController {
     // ===================== Update Requisition Status =====================
     @PatchMapping("/update-status/{id}")
     public ResponseEntity<String> updateRequisitionStatus(@PathVariable Long id,
-                                                          @RequestParam String status) {
+            @RequestParam String status) {
         Optional<Requisition> reqOpt = requisitionRepository.findById(id);
-        if(reqOpt.isEmpty()) {
+        if (reqOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("Requisition not found");
         }
 
@@ -60,4 +75,3 @@ public class RequisitionController {
         return ResponseEntity.ok("Requisition status updated to " + status);
     }
 }
-
