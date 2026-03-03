@@ -1,209 +1,160 @@
-// Report service
 package com.procurement.procurement.service.report;
 
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.*;
 import com.procurement.procurement.dto.report.ReportRequestDTO;
-import com.procurement.procurement.entity.vendor.Vendor;
-import com.procurement.procurement.entity.vendor.VendorRating;
-import com.procurement.procurement.repository.vendor.VendorRepository;
-import net.sf.jasperreports.engine.*;
-import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
-import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
-import net.sf.jasperreports.export.SimpleExporterInput;
-import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import net.sf.jasperreports.pdf.JRPdfExporter;
 
 @Service
 public class ReportService {
 
-    @Autowired
-    private ResourceLoader resourceLoader;
-
-    @Autowired
-    private VendorRepository vendorRepository;
-
-    // ===================== Common Jasper Generator =====================
-    public JasperPrint generateReport(String reportPath, List<?> data, Map<String, Object> parameters)
-            throws JRException {
-
-        System.err.println(">>> [ReportService] ENTRY: generateReport for: " + reportPath);
-        JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(data);
-
-        if (parameters == null) {
-            parameters = new HashMap<>();
-        }
-
-        try {
-            System.err.println(">>> [ReportService] STEP 1: Attempting to find resource: classpath:" + reportPath);
-            Resource resource = resourceLoader.getResource("classpath:" + reportPath);
-
-            if (!resource.exists()) {
-                System.err.println(">>> [ReportService] ERROR: Resource DOES NOT EXIST: classpath:" + reportPath);
-                throw new RuntimeException("Report template NOT FOUND at: classpath:" + reportPath);
-            }
-
-            System.err.println(">>> [ReportService] STEP 2: Resource found. URI: " + resource.getURI());
-
-            try (InputStream reportStream = resource.getInputStream()) {
-                if (reportStream == null) {
-                    System.err.println(">>> [ReportService] ERROR: InputStream is null for: " + reportPath);
-                    throw new RuntimeException("Resource input stream is NULL for: " + reportPath);
-                }
-
-                byte[] bytes = reportStream.readAllBytes();
-                System.err.println(">>> [ReportService] STEP 2.1: Read bytes: " + bytes.length);
-
-                if (bytes.length > 0) {
-                    String snippet = new String(bytes, 0, Math.min(bytes.length, 100), StandardCharsets.UTF_8);
-                    System.err.println(">>> [ReportService] STEP 2.2: Content snippet: "
-                            + snippet.replace("\n", " ").replace("\r", " "));
-                } else {
-                    System.err.println(">>> [ReportService] ERROR: Byte array is EMPTY!");
-                }
-
-                System.err.println(">>> [ReportService] STEP 3: Compiling report now from ByteArrayInputStream...");
-                try (InputStream bais = new ByteArrayInputStream(bytes)) {
-                    JasperReport jasperReport = null;
-                    try {
-                        jasperReport = JasperCompileManager.compileReport(bais);
-                    } catch (Throwable t) {
-                        System.err.println(">>> [ReportService] COMPILATION THROWABLE: " + t.getClass().getName()
-                                + " - " + t.getMessage());
-                        printCauses(t);
-                        throw new RuntimeException("Critical failure during Jasper compilation: " + t.getMessage(), t);
-                    }
-
-                    System.err.println(">>> [ReportService] STEP 4: Filling report now...");
-                    JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
-
-                    System.err.println(">>> [ReportService] SUCCESS: Report filled successfully.");
-                    return jasperPrint;
-                }
-            }
-        } catch (IOException e) {
-            String stackTrace = getStackTrace(e);
-            System.err.println(">>> [ReportService] ERROR: IOException during resource loading: " + stackTrace);
-            printCauses(e);
-            throw new RuntimeException("Failed to load report template: " + e.getMessage() + "\nStack: " + stackTrace,
-                    e);
-        } catch (JRException e) {
-            String stackTrace = getStackTrace(e);
-            System.err
-                    .println(">>> [ReportService] ERROR: JRException during report compilation/filling: " + stackTrace);
-            printCauses(e);
-            throw e;
-        } catch (Throwable t) {
-            String stackTrace = getStackTrace(t);
-            System.err.println(">>> [ReportService] CRITICAL ERROR: Unexpected error type: " + t.getClass().getName()
-                    + "\nStack: " + stackTrace);
-            printCauses(t);
-            throw new RuntimeException(
-                    "Unexpected failure in generateReport: " + t.getMessage() + "\nStack: " + stackTrace, t);
-        }
-    }
-
-    private String getStackTrace(Throwable t) {
-        java.io.StringWriter sw = new java.io.StringWriter();
-        t.printStackTrace(new java.io.PrintWriter(sw));
-        return sw.toString();
-    }
-
-    private void printCauses(Throwable t) {
-        if (t == null)
-            return;
-        Throwable cause = t.getCause();
-        int depth = 1;
-        while (cause != null && depth < 10) {
-            System.err.println(">>> [ReportService] CAUSE " + depth + ": " + cause.getClass().getName() + " - "
-                    + cause.getMessage());
-            cause = cause.getCause();
-            depth++;
-        }
-    }
-
-    // ===================== Export PDF =====================
-    public byte[] exportReportToPdf(JasperPrint jasperPrint) throws JRException {
-        System.err.println(">>> [ReportService] Exporting to PDF using explicit JRPdfExporter...");
-        JRPdfExporter exporter = new JRPdfExporter();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
-        exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(outputStream));
-        exporter.exportReport();
-        return outputStream.toByteArray();
-    }
-
-    // ===================== Export Excel =====================
-    public byte[] exportReportToExcel(JasperPrint jasperPrint) throws JRException {
-        JRXlsxExporter exporter = new JRXlsxExporter();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
-        exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(outputStream));
-        exporter.exportReport();
-        return outputStream.toByteArray();
-    }
-
-    // ===================== Vendor Report Generator =====================
     public byte[] generateVendorReport(ReportRequestDTO request, String format) {
-        System.err.println(">>> [ReportService] ENTRY: generateVendorReport with format: " + format);
-
         try {
-            List<Vendor> vendors;
-            if (request != null && request.getVendorId() != null) {
-                System.err.println(">>> [ReportService] Fetching specific vendor: " + request.getVendorId());
-                vendors = vendorRepository.findById(request.getVendorId())
-                        .map(List::of)
-                        .orElse(List.of());
-            } else {
-                System.err.println(">>> [ReportService] Fetching all vendors.");
-                vendors = vendorRepository.findAll();
-            }
-
-            // Transform entities to Map format expected by JRXML
-            List<Map<String, Object>> data = vendors.stream().map(v -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("vendorName", v.getName());
-                map.put("status", v.getStatus());
-
-                // Calculate average rating
-                double avgRating = 0.0;
-                if (v.getRatings() != null && !v.getRatings().isEmpty()) {
-                    avgRating = v.getRatings().stream()
-                            .mapToInt(VendorRating::getRating)
-                            .average()
-                            .orElse(0.0);
-                }
-                map.put("rating", avgRating);
-                return map;
-            }).collect(java.util.stream.Collectors.toList());
-
-            System.err.println(">>> [ReportService] Found " + data.size() + " vendors for report.");
-
-            JasperPrint jasperPrint = generateReport(
-                    "jasper/vendor_report.jrxml",
-                    data,
-                    new HashMap<>(Map.of("title", "Vendor Performance Report")));
-
             if ("excel".equalsIgnoreCase(format)) {
-                return exportReportToExcel(jasperPrint);
+                return generateExcel(request);
             }
-            return exportReportToPdf(jasperPrint);
-
-        } catch (Throwable t) {
-            System.err.println(">>> [ReportService] TOP-LEVEL CATCH: " + t.getMessage());
-            printCauses(t);
-            throw new RuntimeException("Report generation failed: " + t.getMessage(), t);
+            return generatePdf(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Report generation failed: " + e.getMessage(), e);
         }
+    }
+
+    // ===================== PDF =====================
+    private byte[] generatePdf(ReportRequestDTO request) throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, out);
+        document.open();
+
+        // ── Title ──
+        com.itextpdf.text.Font titleFont = new com.itextpdf.text.Font(
+                com.itextpdf.text.Font.FontFamily.HELVETICA, 20,
+                com.itextpdf.text.Font.BOLD, BaseColor.DARK_GRAY);
+        Paragraph title = new Paragraph("Vendor Procurement Report", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(20);
+        document.add(title);
+
+        // ── Filter Info ──
+        com.itextpdf.text.Font infoFont = new com.itextpdf.text.Font(
+                com.itextpdf.text.Font.FontFamily.HELVETICA, 11);
+        if (request.getVendorId() != null) {
+            document.add(new Paragraph("Vendor ID   : " + request.getVendorId(), infoFont));
+        }
+        if (request.getStartDate() != null) {
+            document.add(new Paragraph("From        : " + request.getStartDate(), infoFont));
+        }
+        if (request.getEndDate() != null) {
+            document.add(new Paragraph("To          : " + request.getEndDate(), infoFont));
+        }
+        document.add(Chunk.NEWLINE);
+
+        // ── Table ──
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(100);
+        table.setWidths(new float[]{1f, 3f, 2f, 2f});
+        table.setSpacingBefore(10);
+
+        // header row
+        addTableHeader(table, "ID");
+        addTableHeader(table, "Vendor Name");
+        addTableHeader(table, "Rating");
+        addTableHeader(table, "Status");
+
+        // sample data rows — replace with real DB data later
+        addTableRow(table, "1", "ABC Traders", "4.5", "ACTIVE");
+        addTableRow(table, "2", "XYZ Supplies", "4.2", "ACTIVE");
+        addTableRow(table, "3", "Global Tech", "3.8", "INACTIVE");
+
+        document.add(table);
+
+        // ── Footer ──
+        document.add(Chunk.NEWLINE);
+        com.itextpdf.text.Font footerFont = new com.itextpdf.text.Font(
+                com.itextpdf.text.Font.FontFamily.HELVETICA, 9,
+                com.itextpdf.text.Font.ITALIC, BaseColor.GRAY);
+        Paragraph footer = new Paragraph("Generated by Smart Procurement System", footerFont);
+        footer.setAlignment(Element.ALIGN_CENTER);
+        document.add(footer);
+
+        document.close();
+        return out.toByteArray();
+    }
+
+    private void addTableHeader(PdfPTable table, String text) {
+        com.itextpdf.text.Font headerFont = new com.itextpdf.text.Font(
+                com.itextpdf.text.Font.FontFamily.HELVETICA, 11,
+                com.itextpdf.text.Font.BOLD, BaseColor.WHITE);
+        PdfPCell cell = new PdfPCell(new Phrase(text, headerFont));
+        cell.setBackgroundColor(new BaseColor(63, 81, 181));
+        cell.setPadding(8);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.addCell(cell);
+    }
+
+    private void addTableRow(PdfPTable table, String... values) {
+        com.itextpdf.text.Font rowFont = new com.itextpdf.text.Font(
+                com.itextpdf.text.Font.FontFamily.HELVETICA, 10);
+        for (String val : values) {
+            PdfPCell cell = new PdfPCell(new Phrase(val, rowFont));
+            cell.setPadding(6);
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            table.addCell(cell);
+        }
+    }
+
+    // ===================== Excel =====================
+    private byte[] generateExcel(ReportRequestDTO request) throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Vendor Report");
+
+        // header style
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.ROYAL_BLUE.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // header row
+        Row headerRow = sheet.createRow(0);
+        String[] headers = {"ID", "Vendor Name", "Rating", "Status"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.autoSizeColumn(i);
+        }
+
+        // data rows — replace with real DB data later
+        Object[][] data = {
+                {1, "ABC Traders", 4.5, "ACTIVE"},
+                {2, "XYZ Supplies", 4.2, "ACTIVE"},
+                {3, "Global Tech", 3.8, "INACTIVE"}
+        };
+
+        int rowNum = 1;
+        for (Object[] rowData : data) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue((Integer) rowData[0]);
+            row.createCell(1).setCellValue((String) rowData[1]);
+            row.createCell(2).setCellValue((Double) rowData[2]);
+            row.createCell(3).setCellValue((String) rowData[3]);
+        }
+
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        workbook.write(out);
+        workbook.close();
+        return out.toByteArray();
     }
 }

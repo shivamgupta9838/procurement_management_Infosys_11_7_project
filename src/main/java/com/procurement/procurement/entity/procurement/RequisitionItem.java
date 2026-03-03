@@ -1,5 +1,6 @@
 package com.procurement.procurement.entity.procurement;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -17,14 +18,14 @@ public class RequisitionItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requisition_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private Requisition requisition;
 
     public RequisitionItem() {
     }
 
     public RequisitionItem(String itemName, String description, int quantity,
-            double unitPrice, Requisition requisition) {
+                           double unitPrice, Requisition requisition) {
         this.itemName = itemName;
         this.description = description;
         this.quantity = quantity;

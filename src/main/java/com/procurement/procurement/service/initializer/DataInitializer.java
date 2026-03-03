@@ -14,56 +14,59 @@ import java.util.Set;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
-        private final RoleRepository roleRepository;
-        private final UserRepository userRepository;
-        private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-        public DataInitializer(RoleRepository roleRepository,
-                        UserRepository userRepository,
-                        PasswordEncoder passwordEncoder) {
-                this.roleRepository = roleRepository;
-                this.userRepository = userRepository;
-                this.passwordEncoder = passwordEncoder;
+    public DataInitializer(RoleRepository roleRepository,
+                           UserRepository userRepository,
+                           PasswordEncoder passwordEncoder) {
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public void run(String... args) {
+
+        // ===================== CREATE ROLES =====================
+
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseGet(() -> roleRepository.save(
+                        new Role("ROLE_ADMIN", "System Administrator")
+                ));
+
+        Role managerRole = roleRepository.findByName("ROLE_PROCUREMENT_MANAGER")
+                .orElseGet(() -> roleRepository.save(
+                        new Role("ROLE_PROCUREMENT_MANAGER", "Procurement Manager")
+                ));
+
+        Role employeeRole = roleRepository.findByName("ROLE_EMPLOYEE")
+                .orElseGet(() -> roleRepository.save(
+                        new Role("ROLE_EMPLOYEE", "Normal Employee")
+                ));
+
+        System.out.println("✅ Roles Initialized");
+
+        // ===================== CREATE DEFAULT ADMIN =====================
+
+        if (userRepository.findByUsername("admin").isEmpty()) {
+
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setEmail("admin@example.com");
+
+            Set<Role> roles = new HashSet<>();
+            roles.add(adminRole);
+
+            admin.setRoles(roles);
+
+            userRepository.save(admin);
+
+            System.out.println("✅ Default Admin Created");
+            System.out.println("Username: admin");
+            System.out.println("Password: admin123");
         }
-
-        @Override
-        public void run(String... args) {
-
-                // ===================== CREATE ROLES =====================
-
-                Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                                .orElseGet(() -> roleRepository.save(
-                                                new Role("ROLE_ADMIN", "System Administrator")));
-
-                Role managerRole = roleRepository.findByName("ROLE_PROCUREMENT_MANAGER")
-                                .orElseGet(() -> roleRepository.save(
-                                                new Role("ROLE_PROCUREMENT_MANAGER", "Procurement Manager")));
-
-                Role employeeRole = roleRepository.findByName("ROLE_EMPLOYEE")
-                                .orElseGet(() -> roleRepository.save(
-                                                new Role("ROLE_EMPLOYEE", "Normal Employee")));
-
-                System.out.println("✅ Roles Initialized");
-
-                // ===================== CREATE DEFAULT ADMIN =====================
-
-                if (userRepository.findByUsername("admin").isEmpty()) {
-
-                        User admin = new User();
-                        admin.setUsername("admin");
-                        admin.setEmail("admin@procurement.com");
-                        admin.setPassword(passwordEncoder.encode("admin123"));
-
-                        Set<Role> roles = new HashSet<>();
-                        roles.add(adminRole);
-
-                        admin.setRoles(roles);
-
-                        userRepository.save(admin);
-
-                        System.out.println("✅ Default Admin Created");
-                        System.out.println("Username: admin");
-                        System.out.println("Password: admin123");
-                }
-        }
+    }
 }

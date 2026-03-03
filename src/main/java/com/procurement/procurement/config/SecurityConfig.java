@@ -30,9 +30,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable()) // temporarily disable CORS to avoid conflict
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
                         // 🔓 Public login/register endpoints
@@ -43,8 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/manager/**").hasRole("PROCUREMENT_MANAGER")
                         .requestMatchers("/api/vendor/**").hasRole("VENDOR")
 
-                        .anyRequest().authenticated()
-                );
+                        .anyRequest().authenticated());
 
         http.addFilterBefore(jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class);
