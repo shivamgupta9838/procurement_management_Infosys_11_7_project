@@ -22,8 +22,8 @@ public class RequisitionService {
     private final AuditService auditService;
 
     public RequisitionService(RequisitionRepository requisitionRepository,
-                              UserRepository userRepository,
-                              AuditService auditService) {
+            UserRepository userRepository,
+            AuditService auditService) {
         this.requisitionRepository = requisitionRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
@@ -69,7 +69,7 @@ public class RequisitionService {
         }
         existingReq.setUpdatedAt(LocalDateTime.now());
 
-        if (updatedReq.getItems() != null) {
+        if (updatedReq.getItems() != null && !updatedReq.getItems().isEmpty()) {
             existingReq.setItems(updatedReq.getItems());
         }
 
