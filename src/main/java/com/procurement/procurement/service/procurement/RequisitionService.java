@@ -30,7 +30,7 @@ public class RequisitionService {
     }
 
     // ===================== CREATE =====================
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PROCUREMENT_MANAGER', 'CREATE_REQUISITION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PROCUREMENT_MANAGER', 'ROLE_EMPLOYEE', 'CREATE_REQUISITION')")
     public Requisition createRequisition(Requisition requisition) {
 
         String username = SecurityContextHolder.getContext()
@@ -69,12 +69,29 @@ public class RequisitionService {
         }
         existingReq.setUpdatedAt(LocalDateTime.now());
 
+        // FIX: The `items` property in updatedReq may be null or empty list depending
+        // on client request.
+        // We only replace the collection if it's explicitly non-null AND non-empty,
+        // to prevent accidentally wiping out existing items during a simple status
+        // update.
         if (updatedReq.getItems() != null && !updatedReq.getItems().isEmpty()) {
             existingReq.setItems(updatedReq.getItems());
         }
 
         Requisition saved = requisitionRepository.save(existingReq);
         auditService.log("Requisition", saved.getId(), "UPDATE", "Requisition updated successfully");
+        return saved;
+    }
+
+    // ===================== MARK AS RECEIVED =====================
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PROCUREMENT_MANAGER', 'ROLE_EMPLOYEE')")
+    public Requisition markRequisitionReceived(Long id) {
+        Requisition existingReq = requisitionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Requisition not found with id: " + id));
+        existingReq.setStatus("RECEIVED");
+        existingReq.setUpdatedAt(LocalDateTime.now());
+        Requisition saved = requisitionRepository.save(existingReq);
+        auditService.log("Requisition", saved.getId(), "UPDATE", "Requisition marked as RECEIVED");
         return saved;
     }
 
@@ -96,9 +113,56 @@ public class RequisitionService {
         return requisitionRepository.findByRequestedBy(currentUser);
     }
 
+    // ===================== DELETE =====================
+    @PreAuthorize("hasAnyAuthority('ROLE_EMPLOYEE', 'ROLE_ADMIN', 'ROLE_PROCUREMENT_MANAGER')")
+    public void deleteRequisition(Long id) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isPrivileged = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_PROCUREMENT_MANAGER")
+                        || a.getAuthority().equals("ROLE_ADMIN"));
+
+        Requisition req = requisitionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Requisition not found"));
+
+        // Employees can only delete their own PENDING requisitions
+        if (!isPrivileged) {
+            if (!req.getRequestedBy().getUsername().equals(username)) {
+                throw new RuntimeException("You can only delete your own requisitions.");
+            }
+            if (!"PENDING".equals(req.getStatus())) {
+                throw new RuntimeException("Only PENDING requisitions can be deleted.");
+            }
+        }
+
+        requisitionRepository.deleteById(id);
+        auditService.log("Requisition", id, "DELETE", "Requisition deleted by " + username);
+    }
+
     // ===================== GET BY STATUS =====================
     @PreAuthorize("hasAuthority('VIEW_REQUISITION')")
     public List<Requisition> getRequisitionsByStatus(String status) {
         return requisitionRepository.findByStatus(status);
+    }
+
+    // ===================== GET BY ID (all roles, employees see own only)
+    // =====================
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PROCUREMENT_MANAGER', 'ROLE_EMPLOYEE')")
+    public Requisition getRequisitionById(Long id) {
+        Requisition req = requisitionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Requisition not found with id: " + id));
+
+        boolean isPrivileged = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_PROCUREMENT_MANAGER")
+                        || a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isPrivileged) {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            if (!req.getRequestedBy().getUsername().equals(username)) {
+                throw new RuntimeException("Access denied: this requisition does not belong to you.");
+            }
+        }
+        return req;
     }
 }
